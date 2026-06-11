@@ -10,5 +10,6 @@ data class IncomingCallData(
     val intercomName: String,
     val sipUri: String,
     val buildingAddress: String,
-    val snapshotUrl: String?
+    val snapshotUrl: String?,
+    val previewUrl: String?
 ) : Parcelable

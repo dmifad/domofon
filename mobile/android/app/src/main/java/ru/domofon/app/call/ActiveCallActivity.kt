@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -23,6 +25,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import ru.domofon.app.cameras.HlsPlayer
 import ru.domofon.app.network.DomofonApi
 import ru.domofon.app.sip.SipCallState
 import ru.domofon.app.sip.SipEngine
@@ -86,7 +89,14 @@ class ActiveCallActivity : ComponentActivity() {
                 style = MaterialTheme.typography.labelLarge
             )
 
-            // TODO sprint 3: видеопревью с панели (RTSP через Media3 PlayerView).
+            data.previewUrl?.let { url ->
+                HlsPlayer(
+                    url = url,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(240.dp)
+                )
+            }
 
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Button(onClick = onOpenDoor) { Text("Открыть дверь") }

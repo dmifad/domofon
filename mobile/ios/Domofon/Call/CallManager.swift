@@ -8,6 +8,7 @@ struct IncomingCallPayload {
     let intercomName: String
     let sipUri: String
     let buildingAddress: String
+    let previewUrl: String?
 
     init?(_ dictionary: [AnyHashable: Any]) {
         guard
@@ -22,15 +23,19 @@ struct IncomingCallPayload {
         self.intercomName = intercomName
         self.sipUri = sipUri
         self.buildingAddress = buildingAddress
+        self.previewUrl = dictionary["previewUrl"] as? String
     }
 }
 
 /// Связывает PushKit, CallKit и SIP-стек.
-final class CallManager: NSObject {
+final class CallManager: NSObject, ObservableObject {
     static let shared = CallManager()
 
     let provider: CXProvider
     let controller = CXCallController()
+
+    /// Активный отвеченный звонок — RootView показывает поверх него ActiveCallView.
+    @Published var answeredCall: IncomingCallPayload?
 
     private var activePayload: IncomingCallPayload?
     private var activeCallUuid: UUID?
@@ -90,6 +95,7 @@ extension CallManager: CXProviderDelegate {
         Task {
             try? await APIClient.shared.answerCall(payload.callId)
             await SipEngine.shared.answer(sipUri: payload.sipUri)
+            await MainActor.run { self.answeredCall = payload }
             action.fulfill()
         }
     }
@@ -101,6 +107,7 @@ extension CallManager: CXProviderDelegate {
         SipEngine.shared.hangup()
         activeCallUuid = nil
         activePayload = nil
+        Task { @MainActor in self.answeredCall = nil }
         action.fulfill()
     }
 

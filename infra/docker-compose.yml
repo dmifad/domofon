@@ -41,8 +41,10 @@ services:
       - "1935:1935"   # RTMP
       - "8888:8888"   # HLS
       - "8889:8889"   # WebRTC
+      - "9996:9996"   # Playback (архив)
     volumes:
       - ./mediamtx/mediamtx.yml:/mediamtx.yml:ro
+      - mediamtx_recordings:/recordings
 
   asterisk:
     image: mlan/asterisk:stable
@@ -60,3 +62,4 @@ volumes:
   redis_data:
   minio_data:
   asterisk_data:
+  mediamtx_recordings:

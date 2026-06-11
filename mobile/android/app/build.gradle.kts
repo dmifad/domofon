@@ -93,6 +93,9 @@ dependencies {
     // SIP / WebRTC
     implementation("io.getstream:stream-webrtc-android:1.1.1")
 
+    // Images (snapshots in events feed)
+    implementation("io.coil-kt:coil-compose:2.7.0")
+
     // Firebase Messaging (push)
     implementation(platform("com.google.firebase:firebase-bom:33.3.0"))
     implementation("com.google.firebase:firebase-messaging-ktx")

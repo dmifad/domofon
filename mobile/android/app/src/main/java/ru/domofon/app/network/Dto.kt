@@ -68,5 +68,32 @@ data class CallDto(
     val status: String,
     val sipUri: String?,
     val answeredBy: String?,
+    val snapshotUrl: String?,
     val createdAt: String
 )
+
+@JsonClass(generateAdapter = false)
+data class CameraDto(
+    val id: String,
+    val name: String,
+    val streamPath: String,
+    val hasArchive: Boolean,
+    val building: BuildingDto
+)
+
+@JsonClass(generateAdapter = false)
+data class StreamInfoDto(val webrtcUrl: String, val hlsUrl: String)
+
+@JsonClass(generateAdapter = false)
+data class ArchiveInfoDto(val playbackUrl: String)
+
+@JsonClass(generateAdapter = false)
+data class EventDto(
+    val id: String,
+    val type: String,
+    val snapshotUrl: String?,
+    val createdAt: String
+)
+
+@JsonClass(generateAdapter = false)
+data class EventsPageDto(val items: List<EventDto>, val nextCursor: String?)

@@ -6,6 +6,7 @@ import { UserApartment } from '../apartments/user-apartment.entity';
 import { Device } from '../devices/device.entity';
 import { EventsModule } from '../events/events.module';
 import { IntercomsModule } from '../intercoms/intercoms.module';
+import { MediaModule } from '../media/media.module';
 import { PushModule } from '../push/push.module';
 import { Call } from './call.entity';
 import { CallsService } from './calls.service';
@@ -19,6 +20,7 @@ import { InternalCallsController } from './internal-calls.controller';
     IntercomsModule,
     EventsModule,
     PushModule,
+    MediaModule,
   ],
   providers: [CallsService],
   controllers: [CallsController, InternalCallsController],

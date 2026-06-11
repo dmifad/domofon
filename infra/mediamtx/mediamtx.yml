@@ -17,6 +17,15 @@ hlsSegmentDuration: 1s
 webrtc: yes
 webrtcAddress: :8889
 
+playback: yes
+playbackAddress: :9996
+
+pathDefaults:
+  record: yes
+  recordPath: /recordings/%path/%Y-%m-%d_%H-%M-%S-%f
+  recordFormat: fmp4
+  recordDeleteAfter: 168h
+
 paths:
   all_others:
     source: publisher

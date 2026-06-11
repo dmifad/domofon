@@ -1,4 +1,4 @@
-import { Controller, Get, Param, ParseUUIDPipe, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CamerasService } from './cameras.service';
@@ -20,5 +20,20 @@ export class CamerasController {
   @Get(':id/stream')
   stream(@Req() req: AuthedRequest, @Param('id', ParseUUIDPipe) id: string) {
     return this.cameras.streamInfo(req.user.sub, id);
+  }
+
+  @Get(':id/archive')
+  archive(
+    @Req() req: AuthedRequest,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('from') from: string,
+    @Query('duration') duration?: string,
+  ) {
+    return this.cameras.archiveInfo(
+      req.user.sub,
+      id,
+      from,
+      duration ? Number(duration) : undefined,
+    );
   }
 }

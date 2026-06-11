@@ -9,6 +9,8 @@ export interface CallPushPayload {
   sipUri: string;
   buildingAddress: string;
   snapshotUrl?: string;
+  /** HLS-поток камеры панели для видеопревью до ответа. */
+  previewUrl?: string;
 }
 
 /**

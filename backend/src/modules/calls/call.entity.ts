@@ -46,6 +46,10 @@ export class Call {
   @Column({ name: 'answered_by', nullable: true })
   answeredBy?: string;
 
+  /** Кадр с панели в момент звонка. */
+  @Column({ name: 'snapshot_url', nullable: true })
+  snapshotUrl?: string;
+
   @Index()
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;

@@ -39,7 +39,8 @@ class DomofonMessagingService : FirebaseMessagingService() {
                     intercomName = data["intercomName"].orEmpty(),
                     sipUri = data["sipUri"].orEmpty(),
                     buildingAddress = data["buildingAddress"].orEmpty(),
-                    snapshotUrl = data["snapshotUrl"]
+                    snapshotUrl = data["snapshotUrl"],
+                    previewUrl = data["previewUrl"]
                 )
                 callNotifier.postIncoming(callData)
             }

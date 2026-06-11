@@ -4,6 +4,7 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface DomofonApi {
     @POST("auth/otp/request")
@@ -41,4 +42,20 @@ interface DomofonApi {
 
     @POST("calls/{id}/decline")
     suspend fun declineCall(@Path("id") id: String): CallDto
+
+    @GET("cameras")
+    suspend fun cameras(): List<CameraDto>
+
+    @GET("cameras/{id}/stream")
+    suspend fun cameraStream(@Path("id") id: String): StreamInfoDto
+
+    @GET("cameras/{id}/archive")
+    suspend fun cameraArchive(
+        @Path("id") id: String,
+        @Query("from") from: String,
+        @Query("duration") duration: Int? = null
+    ): ArchiveInfoDto
+
+    @GET("events")
+    suspend fun events(@Query("cursor") cursor: String? = null): EventsPageDto
 }

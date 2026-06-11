@@ -54,5 +54,35 @@ struct CallDto: Decodable, Identifiable {
     let status: String
     let sipUri: String?
     let answeredBy: String?
+    let snapshotUrl: String?
     let createdAt: String
+}
+
+struct CameraDto: Decodable, Identifiable {
+    let id: String
+    let name: String
+    let streamPath: String
+    let hasArchive: Bool
+    let building: BuildingDto
+}
+
+struct StreamInfo: Decodable {
+    let webrtcUrl: String
+    let hlsUrl: String
+}
+
+struct ArchiveInfo: Decodable {
+    let playbackUrl: String
+}
+
+struct EventDto: Decodable, Identifiable {
+    let id: String
+    let type: String
+    let snapshotUrl: String?
+    let createdAt: String
+}
+
+struct EventsPage: Decodable {
+    let items: [EventDto]
+    let nextCursor: String?
 }

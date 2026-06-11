@@ -65,6 +65,21 @@ final class APIClient {
         try await post("calls/\(id)/decline", body: [:])
     }
 
+    func cameras() async throws -> [CameraDto] { try await get("cameras") }
+
+    func cameraStream(_ id: String) async throws -> StreamInfo {
+        try await get("cameras/\(id)/stream")
+    }
+
+    func cameraArchive(_ id: String, from: String, duration: Int = 60) async throws -> ArchiveInfo {
+        try await get("cameras/\(id)/archive?from=\(from)&duration=\(duration)")
+    }
+
+    func events(cursor: String? = nil) async throws -> EventsPage {
+        let path = cursor.map { "events?cursor=\($0)" } ?? "events"
+        return try await get(path)
+    }
+
     // MARK: - Plumbing
 
     private func get<T: Decodable>(_ path: String) async throws -> T {

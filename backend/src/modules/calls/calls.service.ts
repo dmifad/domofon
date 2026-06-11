@@ -7,6 +7,7 @@ import { UserApartment } from '../apartments/user-apartment.entity';
 import { Device } from '../devices/device.entity';
 import { EventsService } from '../events/events.service';
 import { IntercomsService } from '../intercoms/intercoms.service';
+import { SnapshotService } from '../media/snapshot.service';
 import { CallPushPayload, PushService } from '../push/push.service';
 import { Call } from './call.entity';
 
@@ -33,6 +34,7 @@ export class CallsService {
     private readonly intercoms: IntercomsService,
     private readonly events: EventsService,
     private readonly push: PushService,
+    private readonly snapshots: SnapshotService,
   ) {}
 
   /**
@@ -49,6 +51,9 @@ export class CallsService {
     if (!apartment) throw new NotFoundException('apartment_not_found');
 
     const sipUri = `sip:call-${cryptoSafeId()}@domofon.local`;
+    const snapshotUrl = intercom.cameraPath
+      ? await this.snapshots.capture(intercom.cameraPath, `calls/${intercom.id}`)
+      : null;
     const call = await this.calls.save(
       this.calls.create({
         intercomId: intercom.id,
@@ -56,6 +61,7 @@ export class CallsService {
         buildingId: intercom.buildingId,
         channelId: input.channelId,
         sipUri,
+        snapshotUrl: snapshotUrl ?? undefined,
         status: 'ringing',
       }),
     );
@@ -68,6 +74,7 @@ export class CallsService {
     }
 
     const devices = await this.devices.find({ where: { userId: In(userIds) } });
+    const hlsBase = process.env.MEDIA_SERVER_URL ?? 'http://localhost:8888';
     const payload: CallPushPayload = {
       type: 'call.incoming',
       callId: call.id,
@@ -75,6 +82,10 @@ export class CallsService {
       intercomName: intercom.name,
       sipUri,
       buildingAddress: `${intercom.building.city}, ${intercom.building.address}`,
+      snapshotUrl: snapshotUrl ?? undefined,
+      previewUrl: intercom.cameraPath
+        ? `${hlsBase}/${intercom.cameraPath}/index.m3u8`
+        : undefined,
     };
     await this.push.dispatchCall(devices, payload);
 
@@ -126,6 +137,7 @@ export class CallsService {
       buildingId: call.buildingId,
       type: 'call.missed',
       payload: { callId, reason, intercomId: call.intercomId },
+      snapshotUrl: call.snapshotUrl,
     });
   }
 
