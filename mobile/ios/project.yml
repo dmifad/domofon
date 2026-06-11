@@ -1,0 +1,55 @@
+name: Domofon
+options:
+  bundleIdPrefix: ru.domofon
+  deploymentTarget:
+    iOS: "16.0"
+  developmentLanguage: ru
+
+settings:
+  base:
+    SWIFT_VERSION: "5.10"
+    IPHONEOS_DEPLOYMENT_TARGET: "16.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+
+packages:
+  Alamofire:
+    url: https://github.com/Alamofire/Alamofire
+    from: "5.9.0"
+  KeychainAccess:
+    url: https://github.com/kishikawakatsumi/KeychainAccess
+    from: "4.2.2"
+
+targets:
+  Domofon:
+    type: application
+    platform: iOS
+    sources:
+      - Domofon
+    info:
+      path: Domofon/Info.plist
+      properties:
+        CFBundleDisplayName: Домофон
+        UILaunchScreen:
+          UIColorName: ""
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        NSCameraUsageDescription: Для видеозвонков с домофона
+        NSMicrophoneUsageDescription: Для голосовой связи с посетителем
+        NSFaceIDUsageDescription: Для быстрого входа в приложение
+        UIBackgroundModes:
+          - voip
+          - audio
+          - remote-notification
+    entitlements:
+      path: Domofon/Domofon.entitlements
+      properties:
+        aps-environment: development
+        com.apple.developer.usernotifications.communication: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ru.domofon.app
+        TARGETED_DEVICE_FAMILY: "1"
+    dependencies:
+      - package: Alamofire
+      - package: KeychainAccess
