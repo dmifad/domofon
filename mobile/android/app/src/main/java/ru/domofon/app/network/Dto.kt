@@ -97,3 +97,68 @@ data class EventDto(
 
 @JsonClass(generateAdapter = false)
 data class EventsPageDto(val items: List<EventDto>, val nextCursor: String?)
+
+@JsonClass(generateAdapter = false)
+data class BillingAccountDto(
+    val id: String,
+    val apartmentId: String,
+    val accountNumber: String,
+    val balance: String
+)
+
+@JsonClass(generateAdapter = false)
+data class ChargeDto(
+    val id: String,
+    val period: String,
+    val title: String,
+    val amount: String,
+    val paid: Boolean
+)
+
+@JsonClass(generateAdapter = false)
+data class CreatePaymentBody(val accountId: String, val amount: String)
+
+@JsonClass(generateAdapter = false)
+data class PaymentDto(
+    val id: String,
+    val amount: String,
+    val status: String,
+    val confirmationUrl: String?
+)
+
+@JsonClass(generateAdapter = false)
+data class SubmitMeterBody(
+    val apartmentId: String,
+    val meterType: String,
+    val value: String
+)
+
+@JsonClass(generateAdapter = false)
+data class MeterReadingDto(
+    val id: String,
+    val meterType: String,
+    val value: String,
+    val createdAt: String
+)
+
+@JsonClass(generateAdapter = false)
+data class ChatMessageDto(
+    val id: String,
+    val userId: String?,
+    val text: String,
+    val createdAt: String
+)
+
+@JsonClass(generateAdapter = false)
+data class ChatPageDto(val items: List<ChatMessageDto>, val nextCursor: String?)
+
+@JsonClass(generateAdapter = false)
+data class SendMessageBody(val apartmentId: String, val text: String)
+
+@JsonClass(generateAdapter = false)
+data class AnnouncementDto(
+    val id: String,
+    val title: String,
+    val body: String,
+    val createdAt: String
+)

@@ -80,6 +80,39 @@ final class APIClient {
         return try await get(path)
     }
 
+    func billingAccounts() async throws -> [BillingAccountDto] {
+        try await get("billing/accounts")
+    }
+
+    func charges() async throws -> [ChargeDto] {
+        try await get("billing/charges")
+    }
+
+    func createPayment(accountId: String, amount: String) async throws -> PaymentDto {
+        try await post("billing/payments", body: ["accountId": accountId, "amount": amount])
+    }
+
+    func submitMeter(apartmentId: String, meterType: String, value: String) async throws -> MeterReadingDto {
+        try await post(
+            "billing/meters",
+            body: ["apartmentId": apartmentId, "meterType": meterType, "value": value]
+        )
+    }
+
+    func chatMessages(apartmentId: String, cursor: String? = nil) async throws -> ChatPage {
+        var path = "chat/messages?apartmentId=\(apartmentId)"
+        if let cursor { path += "&cursor=\(cursor)" }
+        return try await get(path)
+    }
+
+    func sendMessage(apartmentId: String, text: String) async throws -> ChatMessageDto {
+        try await post("chat/messages", body: ["apartmentId": apartmentId, "text": text])
+    }
+
+    func announcements() async throws -> [AnnouncementDto] {
+        try await get("chat/announcements")
+    }
+
     // MARK: - Plumbing
 
     private func get<T: Decodable>(_ path: String) async throws -> T {

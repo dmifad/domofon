@@ -24,9 +24,29 @@ async function seed() {
     ['Москва', 'ул. Тестовая, 1'],
   );
 
-  await dataSource.query(
+  const [{ id: apartmentId }] = await dataSource.query(
     `INSERT INTO apartments (building_id, number, account_number, link_code)
-     VALUES ($1, '42', '100001', '1234')`,
+     VALUES ($1, '42', '100001', '1234') RETURNING id`,
+    [buildingId],
+  );
+
+  const [{ id: accountId }] = await dataSource.query(
+    `INSERT INTO billing_accounts (apartment_id, account_number, balance)
+     VALUES ($1, '100001', -3520.50) RETURNING id`,
+    [apartmentId],
+  );
+
+  await dataSource.query(
+    `INSERT INTO charges (account_id, period, title, amount, paid) VALUES
+       ($1, '2026-05', 'Содержание и ремонт', 2100.00, false),
+       ($1, '2026-05', 'Холодная вода', 820.50, false),
+       ($1, '2026-04', 'Содержание и ремонт', 2100.00, true)`,
+    [accountId],
+  );
+
+  await dataSource.query(
+    `INSERT INTO announcements (building_id, title, body) VALUES
+       ($1, 'Отключение воды', '15 июня с 10:00 до 16:00 — плановые работы.')`,
     [buildingId],
   );
 

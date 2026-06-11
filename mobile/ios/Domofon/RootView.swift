@@ -13,9 +13,9 @@ struct RootView: View {
                     .tabItem { Label("Камеры", systemImage: "video.fill") }
                 EventsView()
                     .tabItem { Label("События", systemImage: "clock.fill") }
-                PlaceholderView(title: "ЖКХ")
+                BillingView()
                     .tabItem { Label("ЖКХ", systemImage: "creditcard.fill") }
-                PlaceholderView(title: "Чат")
+                ChatView()
                     .tabItem { Label("Чат", systemImage: "bubble.left.fill") }
             }
             .fullScreenCover(item: Binding(
@@ -33,16 +33,6 @@ struct RootView: View {
 private struct ActiveCallItem: Identifiable {
     let payload: IncomingCallPayload
     var id: String { payload.callId }
-}
-
-private struct PlaceholderView: View {
-    let title: String
-    var body: some View {
-        NavigationStack {
-            Text("В разработке")
-                .navigationTitle(title)
-        }
-    }
 }
 
 #Preview {

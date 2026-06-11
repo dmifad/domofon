@@ -10,6 +10,8 @@ import { DevicesModule } from './modules/devices/devices.module';
 import { EventsModule } from './modules/events/events.module';
 import { CallsModule } from './modules/calls/calls.module';
 import { PushModule } from './modules/push/push.module';
+import { BillingModule } from './modules/billing/billing.module';
+import { ChatModule } from './modules/chat/chat.module';
 import { typeOrmConfig } from './config/typeorm.config';
 
 @Module({
@@ -25,6 +27,8 @@ import { typeOrmConfig } from './config/typeorm.config';
     EventsModule,
     PushModule,
     CallsModule,
+    BillingModule,
+    ChatModule,
   ],
 })
 export class AppModule {}

@@ -58,4 +58,31 @@ interface DomofonApi {
 
     @GET("events")
     suspend fun events(@Query("cursor") cursor: String? = null): EventsPageDto
+
+    @GET("billing/accounts")
+    suspend fun billingAccounts(): List<BillingAccountDto>
+
+    @GET("billing/charges")
+    suspend fun charges(@Query("accountId") accountId: String? = null): List<ChargeDto>
+
+    @POST("billing/payments")
+    suspend fun createPayment(@Body body: CreatePaymentBody): PaymentDto
+
+    @POST("billing/meters")
+    suspend fun submitMeter(@Body body: SubmitMeterBody): MeterReadingDto
+
+    @GET("billing/meters")
+    suspend fun meters(@Query("apartmentId") apartmentId: String): List<MeterReadingDto>
+
+    @GET("chat/messages")
+    suspend fun chatMessages(
+        @Query("apartmentId") apartmentId: String,
+        @Query("cursor") cursor: String? = null
+    ): ChatPageDto
+
+    @POST("chat/messages")
+    suspend fun sendMessage(@Body body: SendMessageBody): ChatMessageDto
+
+    @GET("chat/announcements")
+    suspend fun announcements(): List<AnnouncementDto>
 }

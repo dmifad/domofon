@@ -6,6 +6,8 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Videocam
@@ -29,7 +31,9 @@ import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
 import ru.domofon.app.auth.LoginScreen
 import ru.domofon.app.auth.LoginViewModel
+import ru.domofon.app.billing.BillingScreen
 import ru.domofon.app.cameras.CamerasScreen
+import ru.domofon.app.chat.ChatScreen
 import ru.domofon.app.events.EventsScreen
 import ru.domofon.app.intercoms.IntercomsScreen
 import ru.domofon.app.ui.theme.DomofonTheme
@@ -53,6 +57,8 @@ object Routes {
     const val INTERCOMS = "intercoms"
     const val CAMERAS = "cameras"
     const val EVENTS = "events"
+    const val BILLING = "billing"
+    const val CHAT = "chat"
 }
 
 private data class Tab(val route: String, val title: String, val icon: ImageVector)
@@ -60,7 +66,9 @@ private data class Tab(val route: String, val title: String, val icon: ImageVect
 private val tabs = listOf(
     Tab(Routes.INTERCOMS, "Дом", Icons.Filled.Home),
     Tab(Routes.CAMERAS, "Камеры", Icons.Filled.Videocam),
-    Tab(Routes.EVENTS, "События", Icons.Filled.Notifications)
+    Tab(Routes.EVENTS, "События", Icons.Filled.Notifications),
+    Tab(Routes.BILLING, "ЖКХ", Icons.Filled.CreditCard),
+    Tab(Routes.CHAT, "Чат", Icons.Filled.Chat)
 )
 
 @Composable
@@ -111,6 +119,8 @@ fun DomofonNavHost() {
             composable(Routes.INTERCOMS) { IntercomsScreen() }
             composable(Routes.CAMERAS) { CamerasScreen() }
             composable(Routes.EVENTS) { EventsScreen() }
+            composable(Routes.BILLING) { BillingScreen() }
+            composable(Routes.CHAT) { ChatScreen() }
         }
     }
 }

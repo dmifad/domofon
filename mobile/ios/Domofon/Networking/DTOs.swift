@@ -86,3 +86,51 @@ struct EventsPage: Decodable {
     let items: [EventDto]
     let nextCursor: String?
 }
+
+struct BillingAccountDto: Decodable, Identifiable {
+    let id: String
+    let apartmentId: String
+    let accountNumber: String
+    let balance: String
+}
+
+struct ChargeDto: Decodable, Identifiable {
+    let id: String
+    let period: String
+    let title: String
+    let amount: String
+    let paid: Bool
+}
+
+struct PaymentDto: Decodable {
+    let id: String
+    let amount: String
+    let status: String
+    let confirmationUrl: String?
+}
+
+struct MeterReadingDto: Decodable, Identifiable {
+    let id: String
+    let meterType: String
+    let value: String
+    let createdAt: String
+}
+
+struct ChatMessageDto: Decodable, Identifiable {
+    let id: String
+    let userId: String?
+    let text: String
+    let createdAt: String
+}
+
+struct ChatPage: Decodable {
+    let items: [ChatMessageDto]
+    let nextCursor: String?
+}
+
+struct AnnouncementDto: Decodable, Identifiable {
+    let id: String
+    let title: String
+    let body: String
+    let createdAt: String
+}
