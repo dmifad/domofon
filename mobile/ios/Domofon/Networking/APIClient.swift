@@ -55,6 +55,16 @@ final class APIClient {
         let _: Empty = try await post("devices", body: body)
     }
 
+    func calls() async throws -> [CallDto] { try await get("calls") }
+
+    func answerCall(_ id: String) async throws -> CallDto {
+        try await post("calls/\(id)/answer", body: [:])
+    }
+
+    func declineCall(_ id: String) async throws -> CallDto {
+        try await post("calls/\(id)/decline", body: [:])
+    }
+
     // MARK: - Plumbing
 
     private func get<T: Decodable>(_ path: String) async throws -> T {

@@ -32,4 +32,13 @@ interface DomofonApi {
 
     @POST("devices")
     suspend fun registerDevice(@Body body: RegisterDeviceBody)
+
+    @GET("calls")
+    suspend fun calls(): List<CallDto>
+
+    @POST("calls/{id}/answer")
+    suspend fun answerCall(@Path("id") id: String): CallDto
+
+    @POST("calls/{id}/decline")
+    suspend fun declineCall(@Path("id") id: String): CallDto
 }

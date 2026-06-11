@@ -47,3 +47,12 @@ struct IntercomDto: Decodable, Identifiable {
 struct OpenDoorResponse: Decodable {
     let opened: Bool
 }
+
+struct CallDto: Decodable, Identifiable {
+    let id: String
+    let intercomId: String
+    let status: String
+    let sipUri: String?
+    let answeredBy: String?
+    let createdAt: String
+}

@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { ApartmentsService } from '../apartments/apartments.service';
 import { EventsService } from '../events/events.service';
+import { DoorOpenerService } from './door-opener.service';
 import { Intercom } from './intercom.entity';
 
 @Injectable()
@@ -11,7 +12,12 @@ export class IntercomsService {
     @InjectRepository(Intercom) private readonly intercoms: Repository<Intercom>,
     private readonly apartments: ApartmentsService,
     private readonly events: EventsService,
+    private readonly doorOpener: DoorOpenerService,
   ) {}
+
+  findById(id: string): Promise<Intercom | null> {
+    return this.intercoms.findOne({ where: { id } });
+  }
 
   async listForUser(userId: string): Promise<Intercom[]> {
     const buildingIds = await this.apartments.buildingIdsForUser(userId);
@@ -28,7 +34,7 @@ export class IntercomsService {
       throw new ForbiddenException('no_access_to_intercom');
     }
 
-    // TODO sprint 2: реальное открытие — HTTP API панели (openUrl) или SIP INFO через Asterisk.
+    await this.doorOpener.open(intercom);
 
     await this.events.record({
       buildingId: intercom.buildingId,

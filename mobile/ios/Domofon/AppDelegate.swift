@@ -1,22 +1,14 @@
 import UIKit
 import PushKit
-import CallKit
 
 final class AppDelegate: NSObject, UIApplicationDelegate {
     private let voipRegistry = PKPushRegistry(queue: .main)
-    let callController = CXCallController()
-    let callProvider: CXProvider = {
-        let config = CXProviderConfiguration()
-        config.supportsVideo = true
-        config.maximumCallsPerCallGroup = 1
-        config.supportedHandleTypes = [.generic]
-        return CXProvider(configuration: config)
-    }()
 
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
+        _ = CallManager.shared
         voipRegistry.delegate = self
         voipRegistry.desiredPushTypes = [.voIP]
         application.registerForRemoteNotifications()
@@ -29,7 +21,6 @@ extension AppDelegate: PKPushRegistryDelegate {
         let voipToken = pushCredentials.token.map { String(format: "%02x", $0) }.joined()
         guard TokenStore.shared.isLoggedIn else { return }
         Task {
-            // APNs-токен прилетает отдельно; для VoIP регистрируем тем же endpoint'ом.
             try? await APIClient.shared.registerDevice(pushToken: voipToken, voipToken: voipToken)
         }
     }
@@ -40,7 +31,15 @@ extension AppDelegate: PKPushRegistryDelegate {
         for type: PKPushType,
         completion: @escaping () -> Void
     ) {
-        // TODO: start CXCallUpdate via callProvider, start SIP call
-        completion()
+        // APNs требует репортить входящий звонок до возврата из этого callback,
+        // иначе iOS убьёт процесс. Поэтому reportIncomingCall — синхронно,
+        // а completion вызывается после.
+        guard let callPayload = IncomingCallPayload(payload.dictionaryPayload) else {
+            completion()
+            return
+        }
+        CallManager.shared.reportIncomingCall(payload: callPayload) {
+            completion()
+        }
     }
 }

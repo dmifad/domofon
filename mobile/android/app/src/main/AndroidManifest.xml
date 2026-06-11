@@ -43,6 +43,14 @@
             </intent-filter>
         </service>
 
+        <activity
+            android:name=".call.ActiveCallActivity"
+            android:exported="false"
+            android:launchMode="singleInstance"
+            android:showOnLockScreen="true"
+            android:turnScreenOn="true"
+            android:theme="@style/Theme.Domofon" />
+
         <service
             android:name=".push.DomofonMessagingService"
             android:exported="false">

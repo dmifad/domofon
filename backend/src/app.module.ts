@@ -8,6 +8,8 @@ import { IntercomsModule } from './modules/intercoms/intercoms.module';
 import { CamerasModule } from './modules/cameras/cameras.module';
 import { DevicesModule } from './modules/devices/devices.module';
 import { EventsModule } from './modules/events/events.module';
+import { CallsModule } from './modules/calls/calls.module';
+import { PushModule } from './modules/push/push.module';
 import { typeOrmConfig } from './config/typeorm.config';
 
 @Module({
@@ -21,6 +23,8 @@ import { typeOrmConfig } from './config/typeorm.config';
     CamerasModule,
     DevicesModule,
     EventsModule,
+    PushModule,
+    CallsModule,
   ],
 })
 export class AppModule {}

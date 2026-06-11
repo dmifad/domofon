@@ -60,3 +60,13 @@ data class RegisterDeviceBody(
     val pushToken: String,
     val appVersion: String? = null
 )
+
+@JsonClass(generateAdapter = false)
+data class CallDto(
+    val id: String,
+    val intercomId: String,
+    val status: String,
+    val sipUri: String?,
+    val answeredBy: String?,
+    val createdAt: String
+)
