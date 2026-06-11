@@ -26,9 +26,12 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 
 extension AppDelegate: PKPushRegistryDelegate {
     func pushRegistry(_ registry: PKPushRegistry, didUpdate pushCredentials: PKPushCredentials, for type: PKPushType) {
-        let token = pushCredentials.token.map { String(format: "%02x", $0) }.joined()
-        // TODO: POST /devices with voipToken
-        _ = token
+        let voipToken = pushCredentials.token.map { String(format: "%02x", $0) }.joined()
+        guard TokenStore.shared.isLoggedIn else { return }
+        Task {
+            // APNs-токен прилетает отдельно; для VoIP регистрируем тем же endpoint'ом.
+            try? await APIClient.shared.registerDevice(pushToken: voipToken, voipToken: voipToken)
+        }
     }
 
     func pushRegistry(
