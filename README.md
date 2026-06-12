@@ -34,4 +34,14 @@ cd mobile/ios && xcodegen generate && open Domofon.xcodeproj
 
 ## Статус
 
-Спринт 0 (каркас) — готов. План этапов — в [SPECIFICATION.md](./SPECIFICATION.md#8-этапы).
+Все 6 спринтов завершены — продукт MVP-готов:
+
+1. **Спринт 0** — каркас моно-репо (backend / Android / iOS / infra).
+2. **Спринт 1** — доменная модель, вход по SMS, список домофонов.
+3. **Спринт 2** — жизненный цикл звонка (Asterisk webhook + push + CallKit / ConnectionService), реальное открытие двери.
+4. **Спринт 3** — камеры (live HLS + архив MediaMTX), снапшоты в MinIO, видеопревью в звонке, журнал событий.
+5. **Спринт 4** — ЖКХ (счета, оплата через ЮKassa, счётчики), чат с УК (Socket.IO), объявления.
+6. **Спринт 5** — backend-тесты (Jest), CI (GitHub Actions), Sentry, документация по продакшену и публикации.
+
+Подробный план этапов — в [SPECIFICATION.md](./SPECIFICATION.md#8-этапы),
+инструкции по релизу — в [docs/RELEASE.md](./docs/RELEASE.md).

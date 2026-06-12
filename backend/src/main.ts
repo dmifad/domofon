@@ -4,6 +4,15 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
+  if (process.env.SENTRY_DSN) {
+    const Sentry = await import('@sentry/node');
+    Sentry.init({
+      dsn: process.env.SENTRY_DSN,
+      environment: process.env.NODE_ENV ?? 'development',
+      tracesSampleRate: 0.1,
+    });
+  }
+
   const app = await NestFactory.create(AppModule, { cors: true });
 
   app.setGlobalPrefix('api/v1');
