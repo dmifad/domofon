@@ -18,14 +18,59 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import ru.domofon.app.network.DomofonApi
+import ru.domofon.app.network.LoginBody
+import ru.domofon.app.network.SessionStore
+import javax.inject.Inject
+
+data class LoginUiState(
+    val username: String = "",
+    val pin: String = "",
+    val loading: Boolean = false,
+    val error: String? = null,
+    val loggedIn: Boolean = false
+)
+
+@HiltViewModel
+class LoginViewModel @Inject constructor(
+    private val api: DomofonApi,
+    private val session: SessionStore
+) : ViewModel() {
+    private val _state = MutableStateFlow(LoginUiState(loggedIn = session.isLoggedIn))
+    val state = _state.asStateFlow()
+
+    fun onUsername(v: String) = _state.update { it.copy(username = v, error = null) }
+    fun onPin(v: String) = _state.update { it.copy(pin = v, error = null) }
+
+    fun login() {
+        viewModelScope.launch {
+            _state.update { it.copy(loading = true, error = null) }
+            runCatching {
+                api.login(LoginBody(_state.value.username.trim(), _state.value.pin.trim()))
+            }
+                .onSuccess { response ->
+                    session.saveLogin(response)
+                    _state.update { it.copy(loading = false, loggedIn = true) }
+                }
+                .onFailure {
+                    _state.update { it.copy(loading = false, error = "Неверный логин или PIN") }
+                }
+        }
+    }
+}
 
 @Composable
-fun LoginScreen(
-    onLoggedIn: () -> Unit,
-    viewModel: LoginViewModel = hiltViewModel()
-) {
+fun LoginScreen(onLoggedIn: () -> Unit, viewModel: LoginViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsState()
 
     LaunchedEffect(state.loggedIn) {
@@ -37,46 +82,33 @@ fun LoginScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("Вход", style = MaterialTheme.typography.headlineMedium)
+        Text("Домофон", style = MaterialTheme.typography.headlineLarge)
 
-        if (!state.codeSent) {
-            OutlinedTextField(
-                value = state.phone,
-                onValueChange = viewModel::onPhoneChange,
-                label = { Text("Номер телефона") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Button(
-                onClick = viewModel::requestCode,
-                enabled = !state.loading && state.phone.length >= 11,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Получить код")
-            }
-        } else {
-            Text("Код отправлен на ${state.phone}")
-            OutlinedTextField(
-                value = state.code,
-                onValueChange = viewModel::onCodeChange,
-                label = { Text("Код из SMS") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
-            Button(
-                onClick = viewModel::verifyCode,
-                enabled = !state.loading && state.code.length >= 4,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Войти")
-            }
+        OutlinedTextField(
+            value = state.username,
+            onValueChange = viewModel::onUsername,
+            label = { Text("Логин") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth()
+        )
+        OutlinedTextField(
+            value = state.pin,
+            onValueChange = viewModel::onPin,
+            label = { Text("PIN") },
+            singleLine = true,
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+            modifier = Modifier.fillMaxWidth()
+        )
+        Button(
+            onClick = viewModel::login,
+            enabled = !state.loading && state.username.isNotBlank() && state.pin.isNotBlank(),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Войти")
         }
 
         if (state.loading) CircularProgressIndicator()
-        state.error?.let {
-            Text(it, color = MaterialTheme.colorScheme.error)
-        }
+        state.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
     }
 }

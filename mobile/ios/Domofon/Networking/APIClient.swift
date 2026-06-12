@@ -1,165 +1,149 @@
 import Foundation
-import Alamofire
+import KeychainAccess
+
+struct SipCredentials: Codable, Equatable {
+    let domain: String
+    let username: String
+    let password: String
+}
+
+struct LoginResponse: Codable {
+    let token: String
+    let userId: String
+    let sip: SipCredentials?
+}
+
+struct IntercomDto: Codable, Identifiable {
+    let id: String
+    let name: String
+    let rtspUrl: String?
+}
+
+struct OpenDoorResponse: Codable {
+    let opened: Bool
+    let method: String
+}
+
+enum APIError: LocalizedError {
+    case http(Int)
+    case decoding
+    case network
+
+    var errorDescription: String? {
+        switch self {
+        case .http(let code): return "HTTP \(code)"
+        case .decoding: return "Ошибка ответа сервера"
+        case .network: return "Нет связи с сервером"
+        }
+    }
+}
 
 final class APIClient {
     static let shared = APIClient()
 
-    #if DEBUG
-    static let baseURL = URL(string: "http://localhost:3000/api/v1")!
-    #else
-    static let baseURL = URL(string: "https://api.domofon.example/api/v1")!
-    #endif
+    private let session = URLSession.shared
+    private let keychain = Keychain(service: "ru.domofon.app")
 
-    private let session: Session
-
-    private init() {
-        let interceptor = AuthRequestInterceptor(tokens: .shared)
-        session = Session(interceptor: interceptor)
+    /// Базовый URL хранится в keychain, чтобы менять без пересборки.
+    var baseURL: URL? {
+        get {
+            (try? keychain.get("base_url"))
+                .flatMap { URL(string: $0) }
+        }
+        set { try? keychain.set(newValue?.absoluteString ?? "", key: "base_url") }
     }
 
-    // MARK: - Auth
-
-    func requestOtp(phone: String) async throws -> OtpResponse {
-        try await post("auth/otp/request", body: ["phone": phone], authorized: false)
+    var token: String? {
+        get { try? keychain.get("token") }
+        set { try? keychain.set(newValue ?? "", key: "token") }
     }
 
-    func verifyOtp(phone: String, code: String) async throws -> TokensResponse {
-        try await post("auth/otp/verify", body: ["phone": phone, "code": code], authorized: false)
+    var sip: SipCredentials? {
+        get {
+            guard let data = try? keychain.getData("sip") else { return nil }
+            return try? JSONDecoder().decode(SipCredentials.self, from: data)
+        }
+        set {
+            if let v = newValue, let data = try? JSONEncoder().encode(v) {
+                try? keychain.set(data, key: "sip")
+            } else {
+                try? keychain.remove("sip")
+            }
+        }
     }
 
-    // MARK: - Domain
+    var isLoggedIn: Bool { token != nil }
 
-    func me() async throws -> UserDto {
-        try await get("users/me")
+    func logout() {
+        try? keychain.remove("token")
+        try? keychain.remove("sip")
     }
 
-    func apartments() async throws -> [UserApartmentDto] {
-        try await get("apartments")
-    }
+    // MARK: - Endpoints
 
-    func linkApartment(accountNumber: String, linkCode: String) async throws -> UserApartmentDto {
-        try await post("apartments/link", body: ["accountNumber": accountNumber, "linkCode": linkCode])
+    func login(username: String, pin: String) async throws -> LoginResponse {
+        let response: LoginResponse = try await request(
+            "auth/login", method: "POST",
+            body: ["username": username, "pin": pin],
+            authorized: false
+        )
+        token = response.token
+        sip = response.sip
+        return response
     }
 
     func intercoms() async throws -> [IntercomDto] {
-        try await get("intercoms")
+        try await request("intercoms", method: "GET")
     }
 
-    func openDoor(intercomId: String) async throws -> OpenDoorResponse {
-        try await post("intercoms/\(intercomId)/open", body: [:])
+    func openDoor(id: String) async throws -> OpenDoorResponse {
+        try await request("intercoms/\(id)/open", method: "POST", body: [:])
     }
 
-    func registerDevice(pushToken: String, voipToken: String?) async throws {
-        var body: [String: String] = ["platform": "ios", "pushToken": pushToken]
-        body["voipToken"] = voipToken
-        let _: Empty = try await post("devices", body: body)
-    }
-
-    func calls() async throws -> [CallDto] { try await get("calls") }
-
-    func answerCall(_ id: String) async throws -> CallDto {
-        try await post("calls/\(id)/answer", body: [:])
-    }
-
-    func declineCall(_ id: String) async throws -> CallDto {
-        try await post("calls/\(id)/decline", body: [:])
-    }
-
-    func cameras() async throws -> [CameraDto] { try await get("cameras") }
-
-    func cameraStream(_ id: String) async throws -> StreamInfo {
-        try await get("cameras/\(id)/stream")
-    }
-
-    func cameraArchive(_ id: String, from: String, duration: Int = 60) async throws -> ArchiveInfo {
-        try await get("cameras/\(id)/archive?from=\(from)&duration=\(duration)")
-    }
-
-    func events(cursor: String? = nil) async throws -> EventsPage {
-        let path = cursor.map { "events?cursor=\($0)" } ?? "events"
-        return try await get(path)
-    }
-
-    func billingAccounts() async throws -> [BillingAccountDto] {
-        try await get("billing/accounts")
-    }
-
-    func charges() async throws -> [ChargeDto] {
-        try await get("billing/charges")
-    }
-
-    func createPayment(accountId: String, amount: String) async throws -> PaymentDto {
-        try await post("billing/payments", body: ["accountId": accountId, "amount": amount])
-    }
-
-    func submitMeter(apartmentId: String, meterType: String, value: String) async throws -> MeterReadingDto {
-        try await post(
-            "billing/meters",
-            body: ["apartmentId": apartmentId, "meterType": meterType, "value": value]
+    func registerDevice(pushToken: String) async throws {
+        let _: Empty = try await request(
+            "devices", method: "POST",
+            body: ["platform": "ios", "pushToken": pushToken]
         )
-    }
-
-    func chatMessages(apartmentId: String, cursor: String? = nil) async throws -> ChatPage {
-        var path = "chat/messages?apartmentId=\(apartmentId)"
-        if let cursor { path += "&cursor=\(cursor)" }
-        return try await get(path)
-    }
-
-    func sendMessage(apartmentId: String, text: String) async throws -> ChatMessageDto {
-        try await post("chat/messages", body: ["apartmentId": apartmentId, "text": text])
-    }
-
-    func announcements() async throws -> [AnnouncementDto] {
-        try await get("chat/announcements")
     }
 
     // MARK: - Plumbing
 
-    private func get<T: Decodable>(_ path: String) async throws -> T {
-        try await session
-            .request(Self.baseURL.appendingPathComponent(path))
-            .validate()
-            .serializingDecodable(T.self)
-            .value
-    }
+    struct Empty: Codable {}
 
-    private func post<T: Decodable>(
+    private func request<T: Decodable>(
         _ path: String,
-        body: [String: String],
+        method: String,
+        body: [String: String]? = nil,
         authorized: Bool = true
     ) async throws -> T {
-        try await session
-            .request(
-                Self.baseURL.appendingPathComponent(path),
-                method: .post,
-                parameters: body,
-                encoder: JSONParameterEncoder.default
-            )
-            .validate()
-            .serializingDecodable(T.self)
-            .value
-    }
-}
-
-struct Empty: Decodable {}
-
-final class AuthRequestInterceptor: RequestInterceptor {
-    private let tokens: TokenStore
-
-    init(tokens: TokenStore) {
-        self.tokens = tokens
-    }
-
-    func adapt(
-        _ urlRequest: URLRequest,
-        for session: Session,
-        completion: @escaping (Result<URLRequest, Error>) -> Void
-    ) {
-        var request = urlRequest
-        if let access = tokens.accessToken,
-           request.value(forHTTPHeaderField: "Authorization") == nil {
-            request.setValue("Bearer \(access)", forHTTPHeaderField: "Authorization")
+        guard let base = baseURL else { throw APIError.network }
+        var request = URLRequest(url: base.appendingPathComponent(path))
+        request.httpMethod = method
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        if authorized, let token {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
-        completion(.success(request))
+        if let body {
+            request.httpBody = try JSONEncoder().encode(body)
+        }
+
+        let (data, response): (Data, URLResponse)
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch {
+            throw APIError.network
+        }
+        guard let http = response as? HTTPURLResponse else { throw APIError.network }
+        guard (200..<300).contains(http.statusCode) else { throw APIError.http(http.statusCode) }
+
+        if T.self == Empty.self {
+            return Empty() as! T
+        }
+        do {
+            return try JSONDecoder().decode(T.self, from: data)
+        } catch {
+            throw APIError.decoding
+        }
     }
 }

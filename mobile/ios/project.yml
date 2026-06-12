@@ -9,16 +9,20 @@ settings:
   base:
     SWIFT_VERSION: "5.10"
     IPHONEOS_DEPLOYMENT_TARGET: "16.0"
-    MARKETING_VERSION: "0.1.0"
+    MARKETING_VERSION: "0.2.0"
     CURRENT_PROJECT_VERSION: "1"
 
 packages:
-  Alamofire:
-    url: https://github.com/Alamofire/Alamofire
-    from: "5.9.0"
   KeychainAccess:
     url: https://github.com/kishikawakatsumi/KeychainAccess
     from: "4.2.2"
+  SocketIO:
+    url: https://github.com/socketio/socket.io-client-swift
+    from: "16.1.0"
+  MobileVLCKit:
+    # SwiftPM-зеркало MobileVLCKit для RTSP-плеера панели DNAKE.
+    url: https://github.com/videolan/vlckit
+    branch: master
 
 targets:
   Domofon:
@@ -36,20 +40,22 @@ targets:
           - UIInterfaceOrientationPortrait
         NSCameraUsageDescription: Для видеозвонков с домофона
         NSMicrophoneUsageDescription: Для голосовой связи с посетителем
-        NSFaceIDUsageDescription: Для быстрого входа в приложение
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true
         UIBackgroundModes:
-          - voip
           - audio
-          - remote-notification
+          - voip
     entitlements:
       path: Domofon/Domofon.entitlements
       properties:
-        aps-environment: development
-        com.apple.developer.usernotifications.communication: true
+        com.apple.security.network.client: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: ru.domofon.app
         TARGETED_DEVICE_FAMILY: "1"
     dependencies:
-      - package: Alamofire
       - package: KeychainAccess
+      - package: SocketIO
+        product: SocketIO
+      - package: MobileVLCKit
+        product: MobileVLCKit

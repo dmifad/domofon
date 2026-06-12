@@ -1,40 +1,83 @@
 import SwiftUI
 
 struct RootView: View {
-    @StateObject private var auth = AuthViewModel()
-    @ObservedObject private var callManager = CallManager.shared
+    @StateObject private var auth = LoginViewModel()
+    @ObservedObject private var sip = SipEngine.shared
 
     var body: some View {
-        if auth.loggedIn {
-            TabView {
-                IntercomsView()
-                    .tabItem { Label("Дом", systemImage: "house.fill") }
-                CamerasView()
-                    .tabItem { Label("Камеры", systemImage: "video.fill") }
-                EventsView()
-                    .tabItem { Label("События", systemImage: "clock.fill") }
-                BillingView()
-                    .tabItem { Label("ЖКХ", systemImage: "creditcard.fill") }
-                ChatView()
-                    .tabItem { Label("Чат", systemImage: "bubble.left.fill") }
+        ZStack {
+            if auth.loggedIn {
+                HomeView()
+            } else {
+                LoginView(viewModel: auth)
             }
-            .fullScreenCover(item: Binding(
-                get: { callManager.answeredCall.map(ActiveCallItem.init) },
-                set: { if $0 == nil { callManager.answeredCall = nil } }
-            )) { item in
-                ActiveCallView(payload: item.payload)
+
+            // Поверх — экран звонка (входящий / активный)
+            switch sip.state {
+            case .ringing(let name):
+                IncomingCallView(
+                    remoteName: name,
+                    onAnswer: { sip.answer() },
+                    onDecline: { sip.decline() }
+                )
+                .transition(.opacity)
+            case .inCall:
+                InCallView(
+                    onOpenDoor: { openFirstDoor() },
+                    onHangup: { sip.hangup() }
+                )
+            default:
+                EmptyView()
             }
-        } else {
-            LoginView(viewModel: auth)
+        }
+        .animation(.easeInOut, value: stateKey)
+        .onChange(of: auth.loggedIn) { _, loggedIn in
+            if loggedIn, let sipCreds = APIClient.shared.sip {
+                sip.start(credentials: sipCreds)
+                connectSocket()
+            }
+        }
+        .onAppear {
+            if auth.loggedIn, let sipCreds = APIClient.shared.sip {
+                sip.start(credentials: sipCreds)
+                connectSocket()
+            }
         }
     }
-}
 
-private struct ActiveCallItem: Identifiable {
-    let payload: IncomingCallPayload
-    var id: String { payload.callId }
-}
+    private var stateKey: Int {
+        switch sip.state {
+        case .idle: return 0
+        case .registering: return 1
+        case .registered: return 2
+        case .registrationFailed: return 3
+        case .ringing: return 4
+        case .inCall: return 5
+        }
+    }
 
-#Preview {
-    RootView()
+    private func openFirstDoor() {
+        Task {
+            if let first = try? await APIClient.shared.intercoms().first {
+                _ = try? await APIClient.shared.openDoor(id: first.id)
+            }
+        }
+    }
+
+    private func connectSocket() {
+        guard let base = APIClient.shared.baseURL,
+              let token = APIClient.shared.token else { return }
+        // path /ws сидит на корне сервера, не под /api/v1
+        var components = URLComponents(url: base, resolvingAgainstBaseURL: false)
+        components?.path = ""
+        guard let socketURL = components?.url else { return }
+
+        CallSocket.shared.onIncoming = { _, name in
+            sip.simulateIncoming(remoteName: name)
+        }
+        CallSocket.shared.onEnded = { _ in
+            sip.hangup()
+        }
+        CallSocket.shared.connect(baseURL: socketURL, token: token)
+    }
 }
