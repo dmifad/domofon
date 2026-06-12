@@ -1,36 +1,70 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Intercom } from './intercom.entity';
+import { IntercomConfig } from '../../config/intercoms';
 
 /**
- * Открытие двери. Реальный транспорт зависит от модели панели:
- * - HTTP API (большинство современных панелей: Beward, BAS-IP, Akuvox) — POST на open_url
- * - SIP INFO с DTMF (если открытие реализовано через DTMF в активном звонке) — TODO
+ * Открытие двери двумя способами:
+ *  1. DTMF в активном звонке (через Asterisk ARI POST /channels/{id}/dtmf).
+ *  2. HTTP API панели (вне звонка) — env <PREFIX>_OPEN_URL.
  *
- * Здесь — HTTP-вариант с конфигурируемым timeout. Для SIP INFO нужна интеграция с ARI.
+ * Выбор делает CallsService:
+ *  - если есть активный SIP-канал (call.status = 'answered' или 'ringing') — DTMF;
+ *  - иначе HTTP к панели.
  */
 @Injectable()
 export class DoorOpenerService {
   private readonly logger = new Logger(DoorOpenerService.name);
 
-  async open(intercom: Intercom): Promise<void> {
+  async openByHttp(intercom: IntercomConfig): Promise<void> {
     if (!intercom.openUrl) {
-      this.logger.warn(`Intercom ${intercom.id} has no openUrl; door open is a no-op`);
+      this.logger.warn(`Intercom ${intercom.id} has no OPEN_URL`);
       return;
     }
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3000);
+    const timer = setTimeout(() => controller.abort(), 5000);
     try {
-      const response = await fetch(intercom.openUrl, {
-        method: 'POST',
-        signal: controller.signal,
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ action: 'open' }),
-      });
-      if (!response.ok) {
-        throw new Error(`door open failed: ${response.status}`);
+      const headers: Record<string, string> = {};
+      if (intercom.openAuth) {
+        headers.authorization = 'Basic ' + Buffer.from(intercom.openAuth).toString('base64');
       }
+      const res = await fetch(intercom.openUrl, {
+        method: intercom.openMethod ?? 'POST',
+        signal: controller.signal,
+        headers,
+      });
+      if (!res.ok) throw new Error(`http ${res.status}`);
+      this.logger.log(`Door opened via HTTP for ${intercom.id}`);
     } finally {
-      clearTimeout(timeout);
+      clearTimeout(timer);
     }
+  }
+
+  /**
+   * Открытие через DTMF — Asterisk ARI.
+   * channelId приходит в webhook POST /internal/calls/incoming.
+   * См. https://wiki.asterisk.org/wiki/display/AST/Asterisk+REST+Interface+(ARI)
+   */
+  async openByDtmf(intercom: IntercomConfig, channelId: string): Promise<void> {
+    const ariBase = process.env.ARI_URL;
+    if (!ariBase) {
+      this.logger.warn('ARI_URL not set; cannot send DTMF');
+      return;
+    }
+    const auth = Buffer.from(
+      `${process.env.ARI_USER ?? 'domofon'}:${process.env.ARI_PASSWORD ?? 'domofon'}`,
+    ).toString('base64');
+
+    const url = new URL(`${ariBase}/channels/${encodeURIComponent(channelId)}/dtmf`);
+    url.searchParams.set('dtmf', intercom.openDtmf);
+    url.searchParams.set('between', '100');
+    url.searchParams.set('duration', '250');
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { authorization: `Basic ${auth}` },
+    });
+    if (!res.ok) {
+      throw new Error(`ARI dtmf failed: ${res.status}`);
+    }
+    this.logger.log(`DTMF ${intercom.openDtmf} sent via ARI to ${channelId}`);
   }
 }

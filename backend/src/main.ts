@@ -1,37 +1,22 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, Logger } from '@nestjs/common';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
+import { WsGateway } from './modules/push/ws.gateway';
 
-async function bootstrap() {
-  if (process.env.SENTRY_DSN) {
-    const Sentry = await import('@sentry/node');
-    Sentry.init({
-      dsn: process.env.SENTRY_DSN,
-      environment: process.env.NODE_ENV ?? 'development',
-      tracesSampleRate: 0.1,
-    });
-  }
-
+async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, { cors: true });
-
   app.setGlobalPrefix('api/v1');
   app.useGlobalPipes(
-    new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }),
+    new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: false }),
   );
 
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('Domofon API')
-    .setDescription('Core API for the Domofon intercom platform')
-    .setVersion('0.1.0')
-    .addBearerAuth()
-    .build();
-  const document = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('api/docs', app, document);
+  const ws = app.get(WsGateway);
+  const httpServer = app.getHttpServer();
+  ws.attach(httpServer);
 
   const port = Number(process.env.PORT ?? 3000);
-  await app.listen(port);
-  Logger.log(`Domofon API listening on :${port}`, 'Bootstrap');
+  await app.listen(port, '0.0.0.0');
+  Logger.log(`Domofon API on http://0.0.0.0:${port}`, 'Bootstrap');
 }
 
 bootstrap();

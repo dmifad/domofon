@@ -1,44 +1,36 @@
-import { Body, Controller, Post } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
-import { IsString, Length, Matches } from 'class-validator';
-import { AuthService } from './auth.service';
+import { BadRequestException, Body, Controller, Post, UnauthorizedException } from '@nestjs/common';
+import { IsString, Length } from 'class-validator';
+import { tokens } from '../../auth';
 
-class RequestOtpDto {
-  @Matches(/^\+?\d{10,15}$/)
-  phone!: string;
-}
-
-class VerifyOtpDto {
-  @Matches(/^\+?\d{10,15}$/)
-  phone!: string;
+class LoginDto {
+  @IsString()
+  @Length(1, 32)
+  username!: string;
 
   @IsString()
-  @Length(4, 6)
-  code!: string;
+  @Length(1, 32)
+  pin!: string;
 }
 
-class RefreshDto {
-  @IsString()
-  refreshToken!: string;
-}
-
-@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly auth: AuthService) {}
+  /**
+   * Логин MVP: пара логин/PIN из ENV (USERS=alice:1234,bob:5678).
+   * Возвращает Bearer-токен, который хранится в памяти процесса.
+   */
+  @Post('login')
+  login(@Body() dto: LoginDto): { token: string; userId: string } {
+    const raw = process.env.USERS ?? 'demo:1234';
+    const map = new Map<string, string>();
+    for (const pair of raw.split(',')) {
+      const [name, pin] = pair.split(':');
+      if (name && pin) map.set(name.trim(), pin.trim());
+    }
+    const expected = map.get(dto.username);
+    if (!expected) throw new UnauthorizedException('unknown_user');
+    if (expected !== dto.pin) throw new UnauthorizedException('invalid_pin');
 
-  @Post('otp/request')
-  requestOtp(@Body() dto: RequestOtpDto) {
-    return this.auth.requestOtp(dto.phone);
-  }
-
-  @Post('otp/verify')
-  verifyOtp(@Body() dto: VerifyOtpDto) {
-    return this.auth.verifyOtp(dto.phone, dto.code);
-  }
-
-  @Post('refresh')
-  refresh(@Body() dto: RefreshDto) {
-    return this.auth.refresh(dto.refreshToken);
+    const token = tokens.issue(dto.username);
+    return { token, userId: dto.username };
   }
 }

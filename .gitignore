@@ -58,3 +58,4 @@ infra/volumes/
 # Misc
 *.bak
 .cache/
+backend/data/
