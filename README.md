@@ -5,6 +5,10 @@
 **Стек:** NestJS + SQLite + Asterisk + MediaMTX → Kotlin/Compose + Swift/SwiftUI.
 SIP-стек на Android — `linphone-sdk-android`, на iOS — `linphonesw` (опционально, заглушка работает с Socket.IO).
 
+> 🆕 **Впервые разворачиваете и не знаете, с чего начать?** Откройте подробное
+> пошаговое руководство для новичка: [`docs/SETUP.md`](./docs/SETUP.md).
+> Ниже — краткая версия для тех, кто уже знаком с Docker/Node/Android Studio.
+
 ## Что должно получиться
 
 - Жмёте кнопку на S213 → Android и iOS показывают экран входящего.
